@@ -1,7 +1,9 @@
 package migo
 
 import (
-	"strings"
+	"os"
+
+	"github.com/walkline/migo/sqlscanner"
 )
 
 type Connection interface {
@@ -19,10 +21,10 @@ type Migration interface {
 }
 
 type SQLMigration struct {
-	c          Connection
-	v          Version
-	UpBuffer   []byte
-	DownBuffer []byte
+	c        Connection
+	v        Version
+	UpFile   *os.File
+	DownFile *os.File
 }
 
 func (m *SQLMigration) SetConnection(c Connection) {
@@ -30,39 +32,35 @@ func (m *SQLMigration) SetConnection(c Connection) {
 }
 
 func (m *SQLMigration) Up() error {
-	lastI := 0
-	potentionalLastI := 0
-	for i := 1; i < len(m.UpBuffer); i++ {
-		if potentionalLastI <= 0 && (m.UpBuffer[i] == byte(';') || string(m.UpBuffer[i-1:i+1]) == "\\.") {
-			potentionalLastI = i
-			if i == len(m.UpBuffer)-1 {
-				err := m.c.Exec(string(m.UpBuffer[lastI:potentionalLastI]))
-				if err != nil {
-					return err
-				}
-			}
-			continue
-		}
+	defer m.UpFile.Close()
+	defer m.DownFile.Close()
 
-		if potentionalLastI > 0 && (m.UpBuffer[i] == byte('\n')) {
-			if strings.TrimSpace(string(m.UpBuffer[potentionalLastI+1:i])) == "" {
-				err := m.c.Exec(string(m.UpBuffer[lastI:potentionalLastI]))
-				if err != nil {
-					return err
-				}
-				lastI = i
-				potentionalLastI = -1
-			} else {
-				potentionalLastI = -1
-			}
+	scanner := sqlscanner.NewSQLScanner(m.UpFile)
+	query := ""
+	for scanner.Next(&query) {
+		err := m.c.Exec(query)
+		if err != nil {
+			return err
 		}
 	}
 
-	return nil
+	return scanner.Error
 }
 
 func (m *SQLMigration) Down() error {
-	return m.c.Exec(string(m.DownBuffer))
+	defer m.UpFile.Close()
+	defer m.DownFile.Close()
+
+	scanner := sqlscanner.NewSQLScanner(m.DownFile)
+	query := ""
+	for scanner.Next(&query) {
+		err := m.c.Exec(query)
+		if err != nil {
+			return err
+		}
+	}
+
+	return scanner.Error
 }
 
 func (m *SQLMigration) Version() Version {

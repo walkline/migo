@@ -1,7 +1,6 @@
 package migo
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,18 +49,18 @@ func (l *SQLMigrationsLoader) Load() ([]Migration, error) {
 			v: *version,
 		}
 
-		upData, err := ioutil.ReadFile(fileName + ".up.sql")
+		upfile, err := os.Open(fileName + ".up.sql")
 		if err != nil {
 			panic(err)
 		}
 
-		downData, err := ioutil.ReadFile(fileName + ".down.sql")
+		downfile, err := os.Open(fileName + ".down.sql")
 		if err != nil {
 			panic(err)
 		}
 
-		migration.UpBuffer = upData
-		migration.DownBuffer = downData
+		migration.UpFile = upfile
+		migration.DownFile = downfile
 
 		migrations = append(migrations, &migration)
 	}
