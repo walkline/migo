@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/walkline/migo"
 )
 
 const (
@@ -56,6 +57,10 @@ func (c *GormConnection) SetVersion(ver string) error {
 		Date:    time.Now(),
 		Version: ver,
 	}).Error
+}
+
+func (c *GormConnection) Tx() (migo.Transaction, error) {
+	return NewTransaction(c.DB)
 }
 
 type GormTransaction struct {
