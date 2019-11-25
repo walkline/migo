@@ -10,6 +10,13 @@ type Connection interface {
 	Exec(sql string, values ...interface{}) error
 	LoadVersions() ([]string, error)
 	SetVersion(v string) error
+	Tx() (Transaction, error)
+}
+
+type Transaction interface {
+	Exec(sql string, values ...interface{}) error
+	Commit() error
+	Rollback() error
 }
 
 type Migration interface {
@@ -35,32 +42,54 @@ func (m *SQLMigration) Up() error {
 	defer m.UpFile.Close()
 	defer m.DownFile.Close()
 
+	tx, err := m.c.Tx()
+	if err != nil {
+		return err
+	}
+
 	scanner := sqlscanner.NewSQLScanner(m.UpFile)
 	query := ""
 	for scanner.Next(&query) {
-		err := m.c.Exec(query)
+		err := tx.Exec(query)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 	}
 
-	return scanner.Error
+	if scanner.Error != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (m *SQLMigration) Down() error {
 	defer m.UpFile.Close()
 	defer m.DownFile.Close()
 
+	tx, err := m.c.Tx()
+	if err != nil {
+		return err
+	}
+
 	scanner := sqlscanner.NewSQLScanner(m.DownFile)
 	query := ""
 	for scanner.Next(&query) {
 		err := m.c.Exec(query)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 	}
 
-	return scanner.Error
+	if scanner.Error != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (m *SQLMigration) Version() Version {

@@ -24,6 +24,18 @@ func (c *ConnectionMock) SetVersion(v string) error {
 	return nil
 }
 
+func (c *ConnectionMock) Commit() error {
+	return nil
+}
+
+func (c *ConnectionMock) Rollback() error {
+	return nil
+}
+
+func (c *ConnectionMock) Tx() (Transaction, error) {
+	return c, nil
+}
+
 func TestUpToLatestSQLMigration(t *testing.T) {
 	up1File, err := os.Create("up1.sql")
 	if err != nil {

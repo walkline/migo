@@ -57,3 +57,25 @@ func (c *GormConnection) SetVersion(ver string) error {
 		Version: ver,
 	}).Error
 }
+
+type GormTransaction struct {
+	DB *gorm.DB
+}
+
+func NewTransaction(DB *gorm.DB) (*GormTransaction, error) {
+	return &GormTransaction{
+		DB: DB.Begin(),
+	}, nil
+}
+
+func (tx *GormTransaction) Exec(sql string, values ...interface{}) error {
+	return tx.DB.Exec(sql, values...).Error
+}
+
+func (tx *GormTransaction) Commit() error {
+	return tx.DB.Commit().Error
+}
+
+func (tx *GormTransaction) Rollback() error {
+	return tx.DB.Rollback().Error
+}
