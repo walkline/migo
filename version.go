@@ -4,32 +4,32 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
-	version "github.com/hashicorp/go-version"
+	version "github.com/blang/semver"
 )
 
 type Version struct {
-	v    *version.Version
-	Name string
+	v         *version.Version
+	timestamp int64
+	Name      string
 }
 
 func (v Version) String() string {
-	segs := v.v.Segments64()
 	skipSegs := true
-	for i := 1; i < len(segs); i++ {
-		if segs[i] != 0 {
-			skipSegs = false
-			break
-		}
-
+	if v.v.Patch != 0 || v.v.Minor != 0 || v.timestamp != 0 {
+		skipSegs = false
 	}
 
 	ver := ""
 	if skipSegs {
-		ver = fmt.Sprintf("%v", segs[0])
+		ver = fmt.Sprintf("%v", v.v.Major)
 	} else {
 		ver = v.v.String()
+		if v.timestamp > 0 {
+			ver += fmt.Sprintf(".%d", v.timestamp)
+		}
 	}
 
 	return fmt.Sprintf("%s-%s", ver, v.Name)
@@ -41,7 +41,19 @@ func VersionFromString(s string) (*Version, error) {
 		return nil, errors.New("bad version format")
 	}
 
-	v, err := version.NewVersion(strs[0])
+	semver := strs[0]
+	var timestamp int64
+	versions := strings.Split(strs[0], ".")
+	if len(versions) == 4 {
+		semver = fmt.Sprintf("%s.%s.%s", versions[0], versions[1], versions[2])
+		var err error
+		timestamp, err = strconv.ParseInt(versions[3], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	v, err := version.ParseTolerant(semver)
 	if err != nil {
 		return nil, err
 	}
@@ -50,17 +62,28 @@ func VersionFromString(s string) (*Version, error) {
 	name := string(strAsByte[len(strs[0])+1:])
 
 	return &Version{
-		v:    v,
-		Name: name,
+		v:         &v,
+		Name:      name,
+		timestamp: timestamp,
 	}, nil
 }
 
 func (v Version) GreaterThan(o *Version) bool {
-	return v.v.GreaterThan(o.v)
+	r := v.v.Compare(*o.v)
+	if r == 0 {
+		return v.timestamp > o.timestamp
+	}
+
+	return r == 1
 }
 
 func (v Version) GreaterThanOrEqual(o *Version) bool {
-	return v.v.GreaterThanOrEqual(o.v)
+	r := v.v.Compare(*o.v)
+	if r == 0 {
+		return v.timestamp >= o.timestamp
+	}
+
+	return r >= 0
 }
 
 func StringsToVersions(strs []string) ([]Version, error) {

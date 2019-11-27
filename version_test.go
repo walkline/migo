@@ -52,6 +52,8 @@ func TestGreatestVersion(t *testing.T) {
 		{[]string{"2.0.0-desc", "1.0.0-desc"}, "2-desc"},
 		{[]string{"1.20.1-desc", "2.0.0-desc", "1.0.0-desc"}, "2-desc"},
 		{[]string{"1.20.1-desc", "2.0.0-desc", "2.0.0.1-desc"}, "2.0.0.1-desc"},
+		{[]string{"1.20.1-desc", "2.0.0-desc", "2.0.0.1-desc", "2.0.0.0-desc"}, "2.0.0.1-desc"},
+		{[]string{"1.20.1-desc", "2.0.0-desc", "2.0.0.21-desc", "2.0.0.1-desc"}, "2.0.0.21-desc"},
 	} {
 		versions := []Version{}
 		for _, v := range v.slice {

@@ -1,3 +1,3 @@
 package migo
 
-var VersionDefaultTemplateData = `{{.timestamp}}`
+var VersionDefaultTemplateData = `1.0.0.{{.timestamp}}`
