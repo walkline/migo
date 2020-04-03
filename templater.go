@@ -95,7 +95,11 @@ func (t *Templater) TampleteWithType(tmplType TemplateType) *Template {
 func (t *Templater) loadSQLTemplates(path string) error {
 	upPath := t.migoPath(path) + "/tmpl/sql/up.sql"
 	if _, err := os.Stat(upPath); os.IsNotExist(err) {
-		os.MkdirAll(t.migoPath(path)+"/tmpl/sql", os.ModePerm)
+		err = os.MkdirAll(t.migoPath(path)+"/tmpl/sql", os.ModePerm)
+		if err != nil {
+			return err
+		}
+
 		err = ioutil.WriteFile(upPath, []byte(SQLUpDefaultTemplateData), 0755)
 		if err != nil {
 			return err
@@ -124,9 +128,13 @@ func (t *Templater) loadSQLTemplates(path string) error {
 }
 
 func (t *Templater) loadGoTemplates(path string) error {
-	goPath := t.migoPath(path) + "/tmpl/go/tmpl.go"
+	goPath := t.migoPath(path) + "/tmpl/go/go.tmpl"
 	if _, err := os.Stat(goPath); os.IsNotExist(err) {
-		os.MkdirAll(t.migoPath(path)+"/tmpl/go", os.ModePerm)
+		err = os.MkdirAll(t.migoPath(path)+"/tmpl/go", os.ModePerm)
+		if err != nil {
+			return err
+		}
+
 		err = ioutil.WriteFile(goPath, []byte(GoDefaultTemplateData), 0755)
 		if err != nil {
 			return err
@@ -144,7 +152,11 @@ func (t *Templater) loadGoTemplates(path string) error {
 func (t *Templater) loadVersionTemplate(path string) error {
 	verPath := t.migoPath(path) + "/tmpl/version/version.tmpl"
 	if _, err := os.Stat(verPath); os.IsNotExist(err) {
-		os.MkdirAll(t.migoPath(path)+"/tmpl/version", os.ModePerm)
+		err = os.MkdirAll(t.migoPath(path)+"/tmpl/version", os.ModePerm)
+		if err != nil {
+			return err
+		}
+
 		err = ioutil.WriteFile(verPath, []byte(VersionDefaultTemplateData), 0755)
 		if err != nil {
 			return err

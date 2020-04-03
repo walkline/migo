@@ -41,7 +41,6 @@ func (m *Migrate) Add(migration Migration) error {
 // filters migrations that already applied,
 // and starts migration process.
 func (m *Migrate) UpToLatest() error {
-
 	err := m.loadMigrations()
 	if err != nil {
 		return errors.New("can't load migrations " + err.Error())
@@ -92,7 +91,6 @@ func (m *Migrate) UpToLatest() error {
 // DownWithSteps runs migrations to downgrade database version.
 // `steps` is number of latest migrations that needs to be unapplied.
 func (m *Migrate) DownWithSteps(steps int) error {
-
 	err := m.loadMigrations()
 	if err != nil {
 		return errors.New("can't load migrations " + err.Error())
@@ -151,7 +149,10 @@ func (m *Migrate) loadMigrations() error {
 		}
 
 		for _, migration := range migrations {
-			m.Add(migration)
+			err = m.Add(migration)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -246,6 +247,10 @@ func (m *Migrate) ApplyLostAndPanic() error {
 	panic("remove ApplyLostAndPanic code")
 }
 
+func (m *Migrate) ApplyLostIfAny() error {
+	return m.applyLost(0)
+}
+
 func (m *Migrate) applyLost(delayBetweenMigrations time.Duration) error {
 	err := m.loadMigrations()
 	if err != nil {
@@ -290,7 +295,7 @@ func (m *Migrate) applyLost(delayBetweenMigrations time.Duration) error {
 		fmt.Printf("Applied '%s'! Duration: %v.\n\n", migration.Version(), time.Since(start))
 	}
 
-	fmt.Println("Database up to date!")
+	fmt.Println("Lost migrations applied!")
 
 	m.migrations = []Migration{}
 
