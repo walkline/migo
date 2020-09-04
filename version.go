@@ -35,6 +35,25 @@ func (v Version) String() string {
 	return fmt.Sprintf("%s-%s", ver, v.Name)
 }
 
+func (v Version) StringWithoutName() string {
+	skipSegs := true
+	if v.v.Patch != 0 || v.v.Minor != 0 || v.timestamp != 0 {
+		skipSegs = false
+	}
+
+	ver := ""
+	if skipSegs {
+		ver = fmt.Sprintf("%v", v.v.Major)
+	} else {
+		ver = v.v.String()
+		if v.timestamp > 0 {
+			ver += fmt.Sprintf(".%d", v.timestamp)
+		}
+	}
+
+	return ver
+}
+
 func VersionFromString(s string) (*Version, error) {
 	strs := strings.Split(s, "-")
 	if len(strs) < 2 {

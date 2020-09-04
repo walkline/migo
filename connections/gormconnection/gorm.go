@@ -3,8 +3,8 @@ package gormconnection
 import (
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"github.com/walkline/migo"
+	"gorm.io/gorm"
 )
 
 const (
@@ -31,16 +31,19 @@ func (c *GormConnection) Exec(sql string, values ...interface{}) error {
 }
 
 func (c *GormConnection) LoadVersions() ([]string, error) {
-	if !c.DB.HasTable(&DBVersion{}) {
-		c.DB.AutoMigrate(&DBVersion{})
-	}
-
 	var v []DBVersion
 	if err := c.DB.Find(&v).Error; err != nil {
-		return nil, err
+		// maybe we need to create table...
+		if err = c.DB.AutoMigrate(&DBVersion{}); err != nil {
+			return nil, err
+		}
+
+		if err = c.DB.Find(&v).Error; err != nil {
+			return nil, err
+		}
 	}
 
-	vers := make([]string, len(v), len(v))
+	vers := make([]string, len(v))
 	for i, ver := range v {
 		vers[i] = ver.Version
 	}
@@ -67,9 +70,9 @@ type GormTransaction struct {
 	DB *gorm.DB
 }
 
-func NewTransaction(DB *gorm.DB) (*GormTransaction, error) {
+func NewTransaction(db *gorm.DB) (*GormTransaction, error) {
 	return &GormTransaction{
-		DB: DB.Begin(),
+		DB: db.Begin(),
 	}, nil
 }
 

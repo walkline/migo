@@ -13,9 +13,9 @@ type TemplateType string
 
 const (
 	TemplateTypeSQLUp   TemplateType = "sql-up"
-	TemplateTypeSQLDown              = "sql-down"
-	TemplateTypeGo                   = "go"
-	TemplateTypeVersion              = "version"
+	TemplateTypeSQLDown TemplateType = "sql-down"
+	TemplateTypeGo      TemplateType = "go"
+	TemplateTypeVersion TemplateType = "version"
 )
 
 type Template struct {
@@ -30,13 +30,17 @@ func (t *Template) Build(v *Version) ([]byte, error) {
 	}
 
 	buf := bytes.NewBufferString("")
-	tmpl.Execute(buf, map[string]interface{}{
+	err = tmpl.Execute(buf, map[string]interface{}{
 		"version": map[string]interface{}{
 			"name":    v.Name,
-			"verSafe": strings.Replace(v.v.String(), ".", "_", -1),
-			"ver":     v.v.String(),
+			"verSafe": strings.Replace(v.StringWithoutName(), ".", "_", -1),
+			"ver":     v.StringWithoutName(),
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	return buf.Bytes(), nil
 }
 
@@ -47,9 +51,13 @@ func (t *Template) BuildVersion() (string, error) {
 	}
 
 	buf := bytes.NewBufferString("")
-	tmpl.Execute(buf, map[string]interface{}{
+	err = tmpl.Execute(buf, map[string]interface{}{
 		"timestamp": time.Now().Unix(),
 	})
+
+	if err != nil {
+		return "", err
+	}
 
 	return strings.Replace(buf.String(), "\n", "", -1), nil
 }
